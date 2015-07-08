@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#f9f1ed"
+    android:orientation="vertical" >
+
+    <RelativeLayout
+        android:id="@+id/detail_tittle"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="#F74275"
+        android:gravity="center" >
+
+        <ImageButton
+            android:id="@+id/back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10dp"
+            android:src="@drawable/btn_back" />
+
+        <ImageButton
+            android:id="@+id/share"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="10dp"
+            android:src="@drawable/fenxiang" />
+
+        <TextView
+            android:id="@+id/detail_tv"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:gravity="center_horizontal"
+            android:text="@string/detail"
+            android:textColor="#ffffff"
+            android:textSize="25sp" />
+    </RelativeLayout>
+
+    <FrameLayout
+        android:id="@+id/detail_fl_picture"
+        android:layout_width="fill_parent"
+        android:layout_height="260dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp" >
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/detail_vp"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:alpha="200" >
+        </android.support.v4.view.ViewPager>
+
+        <LinearLayout
+            android:id="@+id/ll_bottomNavPoint"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingBottom="20dp" >
+
+            <LinearLayout
+                android:id="@+id/ll_focus_indicator_container"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:gravity="center"
+                android:orientation="horizontal" >
+            </LinearLayout>
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/detail_ib_camera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginTop="5dp"
+            android:background="@null"
+            android:src="@drawable/detail_carema" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="5dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical" >
+
+        <RelativeLayout
+            android:id="@+id/detail_rl_info"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
+            android:orientation="vertical" >
+
+            <RelativeLayout
+                android:id="@+id/detail_layout_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/detail_layout_mark"
+                android:layout_alignParentTop="true"
+                android:layout_alignRight="@+id/detail_layout_mark"
+                android:gravity="center" >
+
+                <EditText
+                    android:id="@+id/detail_et_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@null"
+                    android:gravity="center"
+                    android:hint="@string/detail_et_name_hint"
+                    android:maxLength="7"
+                    android:selectAllOnFocus="true"
+                    android:singleLine="true"
+                    android:textColor="#333333"
+                    android:textSize="20sp" />
+
+                <View
+                    android:id="@+id/detail_view1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="1dp"
+                    android:layout_alignLeft="@+id/detail_et_name"
+                    android:layout_alignRight="@+id/detail_et_name"
+                    android:layout_below="@+id/detail_et_name"
+                    android:background="@color/black" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/detail_layout_season"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/detail_layout_mark"
+                android:layout_alignRight="@+id/detail_layout_mark"
+                android:layout_below="@+id/detail_layout_name"
+                android:layout_marginTop="20dp"
+                android:gravity="center_horizontal" >
+
+                <TextView
+                    android:id="@+id/detail_tv_season"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginRight="10dp"
+                    android:gravity="center_horizontal"
+                    android:text="@string/detail_tv_season"
+                    android:textColor="#505050"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/detail_et_seasonshow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/detail_tv_season"
+                    android:background="@null"
+                    android:editable="false"
+                    android:ems="7"
+                    android:hint="@string/detail_et_seasonshow_hint"
+                    android:maxLength="7"
+                    android:selectAllOnFocus="true"
+                    android:singleLine="true"
+                    android:textColor="#505050"
+                    android:textSize="16sp" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/detail_layout_type"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/detail_layout_mark"
+                android:layout_alignRight="@+id/detail_layout_mark"
+                android:layout_below="@+id/detail_layout_season"
+                android:layout_marginTop="10dp"
+                android:gravity="center_horizontal" >
+
+                <TextView
+                    android:id="@+id/detail_tv_type"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginRight="10dp"
+                    android:gravity="center_horizontal"
+                    android:text="@string/detail_tv_type"
+                    android:textColor="#505050"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/detail_et_typeshow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/detail_tv_type"
+                    android:background="@null"
+                    android:editable="false"
+                    android:ems="7"
+                    android:hint="@string/detail_et_typeshow_hint"
+                    android:maxLength="7"
+                    android:selectAllOnFocus="true"
+                    android:singleLine="true"
+                    android:textColor="#505050"
+                    android:textSize="16sp" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/detail_layout_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignLeft="@+id/detail_layout_mark"
+                android:layout_alignRight="@+id/detail_layout_mark"
+                android:layout_below="@+id/detail_layout_type"
+                android:layout_marginTop="10dp"
+                android:gravity="center_horizontal" >
+
+                <TextView
+                    android:id="@+id/detail_tv_position"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginRight="10dp"
+                    android:gravity="center_horizontal"
+                    android:text="@string/detail_tv_position"
+                    android:textColor="#505050"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/detail_et_positionshow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/detail_tv_position"
+                    android:background="@null"
+                    android:ems="7"
+                    android:hint="@string/detail_et_positionshow_hint"
+                    android:maxLength="7"
+                    android:selectAllOnFocus="true"
+                    android:singleLine="true"
+                    android:textColor="#505050"
+                    android:textSize="16sp" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/detail_layout_mark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/detail_layout_position"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                android:layout_marginTop="10dp"
+                android:gravity="center_horizontal" >
+
+                <TextView
+                    android:id="@+id/detail_tv_mark"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginRight="10dp"
+                    android:gravity="center_horizontal"
+                    android:text="@string/detail_tv_mark"
+                    android:textColor="#505050"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/detail_et_markshow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@+id/detail_tv_mark"
+                    android:background="@null"
+                    android:ems="7"
+                    android:hint="@string/detail_et_markshow_hint"
+                    android:inputType="textPersonName"
+                    android:selectAllOnFocus="true"
+                    android:textColor="#505050"
+                    android:textSize="16sp" />
+            </RelativeLayout>
+
+            <Button
+                android:id="@+id/detail_btn_save"
+                style="@style/add_btn_shape"
+                android:layout_width="197dp"
+                android:layout_height="40dp"
+                android:layout_alignLeft="@+id/detail_layout_mark"
+                android:layout_alignParentBottom="true"
+                android:layout_alignRight="@+id/detail_layout_mark"
+                android:text="@string/save"
+                android:textColor="#ffffff"
+                android:textSize="15sp" />
+        </RelativeLayout>
+    </LinearLayout>
+
+</LinearLayout>

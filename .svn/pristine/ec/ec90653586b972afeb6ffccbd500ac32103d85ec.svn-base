@@ -1,0 +1,694 @@
+package com.eoe.excoo.activity;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Parcelable;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.util.DisplayMetrics;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
+import android.widget.Toast;
+
+import com.eoe.excoo.R;
+import com.eoe.excoo.adapter.ShowAdapter;
+import com.eoe.excoo.bean.ItemBean;
+import com.eoe.excoo.bean.PicBean;
+import com.eoe.excoo.bean.TypeBean;
+import com.eoe.excoo.util.AppInfo;
+import com.eoe.excoo.util.Common;
+import com.eoe.excoo.util.ImageUtil;
+import com.eoe.excoo.util.SysApplication;
+import com.eoe.excoo.view.XListView;
+import com.eoe.excoo.view.XListView.IXListViewListener;
+import com.eoe.excoo.webservice.DeleteItemWebservice;
+import com.eoe.excoo.webservice.GetAllTypesWebservice;
+import com.eoe.excoo.webservice.GetArticleWebservice;
+import com.eoe.excoo.webservice.GetPicDetailWebservice;
+import com.eoe.excoo.webservice.VagueArticleWebservice;
+
+public class ShowActivity extends BaseActivity implements OnClickListener,
+		AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener,
+		IXListViewListener {
+	private DisplayMetrics displayMetrics;
+	private int window_width;
+	private int window_height;
+	private ImageView seasons, coat, footwear, other, imageView;
+	private ImageView[] imageViews;
+	private LayoutParams para;
+	private RelativeLayout title;
+	private ImageButton btn_my, btn_add;
+	private EditText et_search;
+	private ViewPager viewPager;
+	public XListView show_list;
+	private ShowAdapter showAdapter;
+	ImageUtil imageUtil = new ImageUtil();
+	public List<TypeBean> typeBeans = new ArrayList<TypeBean>();
+	public List<ItemBean> itemBeans = new ArrayList<ItemBean>();
+	private AtomicInteger what = new AtomicInteger(0);
+	private boolean isContinue = true;
+	private List<ItemBean> seasonList;
+	private ItemBean itemBean;
+	private String[] arrayOther;
+	private String version;
+	private ImageButton refreshBtn;
+
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.show_activity);
+
+		SysApplication.getInstance().addActivity(this);// 将该activity添加到管理类中去。
+		version = AppInfo.getAppVersionName(this);
+		Common.versionNumber = version;
+		// 检查版本更新
+		// GetNewVersionWebservice getVersion = new
+		// GetNewVersionWebservice(this,
+		// this, version);
+		// getVersion.execute();
+		findView();
+		init();
+
+		et_search.setOnEditorActionListener(new OnEditorActionListener() {
+			@Override
+			public boolean onEditorAction(TextView v, int actionId,
+					KeyEvent event) {
+				conditionSearch();
+				return true;
+			}
+		});
+		show_list.setOnItemLongClickListener(new OnItemLongClickListener() {
+			@Override
+			public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
+					final int arg2, long arg3) {
+				Dialog alertDialog = new AlertDialog.Builder(ShowActivity.this)
+						.setTitle("确认删除？")
+						.setIcon(R.drawable.seasons)
+						.setPositiveButton("确定",
+								new DialogInterface.OnClickListener() {
+									@Override
+									public void onClick(DialogInterface dialog,
+											int position) {
+										/* 调用删除接口 */
+										deleteItem(arg2);
+									}
+								})
+						.setNegativeButton("取消",
+								new DialogInterface.OnClickListener() {
+									@Override
+									public void onClick(DialogInterface dialog,
+											int which) {
+									}
+								}).create();
+				alertDialog.show();
+				return true;
+			}
+		});
+	}
+
+	public void getAllPics() {
+		for (ItemBean itemBean : itemBeans) {
+			List<PicBean> listPic = new ArrayList<PicBean>(
+					itemBean.getPicBeans());
+			for (PicBean pic : listPic) {
+				if (imageUtil.isExists(pic.getPic_id())) {
+					// 如果图片存在，从本地获取
+				} else {
+					// 图片不存在，从webservice获取
+					GetPicDetailWebservice getPic = new GetPicDetailWebservice(
+							pic.getPic_id());
+					getPic.execute();
+				}
+			}
+
+		}
+	}
+
+	/**
+	 * 获取所有物品接口
+	 * 
+	 * @param boolean boo 是否显示加载动画
+	 * */
+	public void getListItem(boolean boo) {
+		final GetArticleWebservice get = new GetArticleWebservice(
+				ShowActivity.this, boo);
+		get.execute();
+		new Thread() {
+			public void run() {
+				try {
+					get.get(7000, TimeUnit.MILLISECONDS);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				} catch (TimeoutException e) {
+					e.printStackTrace();
+					// 如果doInBackground中的代码执行时间超过7000毫秒，则会出现这个异常。
+					// 所以这里是处理这个异常的唯一途径
+					// get.cancel(true);// 停止异步线程
+					Looper.prepare();
+					Toast.makeText(ShowActivity.this, "网络不给力啊！",
+							Toast.LENGTH_SHORT).show();
+					Looper.loop();
+				}
+			};
+		}.start();
+		GetAllTypesWebservice getTypes = new GetAllTypesWebservice(
+				ShowActivity.this);
+		getTypes.execute();
+	}
+
+	/** 删除物品 */
+	public void deleteItem(int position) {
+		if (itemBeans.size() <= 1) {
+			showToast("至少保留一个");
+			return;
+		}
+		ItemBean itemBean = itemBeans.get(position - 1);
+		DeleteItemWebservice delete = new DeleteItemWebservice(
+				ShowActivity.this, ShowActivity.this, itemBean);
+		delete.execute();
+	}
+
+	/** 添加适配器 */
+	public void picAdapter() {
+		showAdapter = new ShowAdapter(itemBeans, ShowActivity.this);// 绑定数据
+		show_list.setAdapter(showAdapter);
+	}
+
+	/**
+	 * 初始化
+	 * */
+	public void init() {
+		getListItem(false);
+
+		refreshBtn.getBackground().setAlpha(0);// 0~255透明度值 给刷新按钮设置透明度
+		btn_my.getBackground().setAlpha(0);
+		btn_add.getBackground().setAlpha(0);
+		displayMetrics = new DisplayMetrics();
+		getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+		window_width = displayMetrics.widthPixels;
+		window_height = displayMetrics.heightPixels;
+
+		show_list.setXListViewListener(this);// 添加下拉刷新监听
+		show_list.setPullLoadEnable(false);// 禁用加载更多
+
+		show_list.setOnItemClickListener(new OnItemClickListener() {
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				Intent intent = new Intent(ShowActivity.this,
+						DetailActivity.class);
+				ItemBean bean = itemBeans.get(position - 1);
+				intent.putExtra("itemBean", bean);
+				startActivityForResult(intent, 0);
+			}
+		});
+
+		adaptation();
+		initViewPager();
+		btn_my.setOnClickListener(this);
+		btn_add.setOnClickListener(this);
+		et_search.setOnClickListener(this);
+		seasons.setOnClickListener(this);
+		coat.setOnClickListener(this);
+		footwear.setOnClickListener(this);
+		other.setOnClickListener(this);
+		refreshBtn.setOnClickListener(this);
+	}
+
+	/**
+	 * findViewById
+	 * */
+	private void findView() {
+		title = (RelativeLayout) findViewById(R.id.title);
+		btn_my = (ImageButton) findViewById(R.id.btn_my);
+		btn_add = (ImageButton) findViewById(R.id.btn_add);
+		et_search = (EditText) findViewById(R.id.et_search);
+		viewPager = (ViewPager) findViewById(R.id.adv_pager);
+		show_list = (XListView) findViewById(R.id.show_list);
+
+		seasons = (ImageView) this.findViewById(R.id.seasons);
+		coat = (ImageView) this.findViewById(R.id.coat);
+		footwear = (ImageView) this.findViewById(R.id.footwear);
+		other = (ImageView) this.findViewById(R.id.other);
+		refreshBtn = (ImageButton) findViewById(R.id.refresh);
+	}
+
+	/**
+	 * 屏幕比例适配
+	 * */
+	private void adaptation() {
+		para = et_search.getLayoutParams();
+		para.height = (int) (window_height * (50.0 / 1334));
+		para.width = (int) window_width;
+		et_search.setLayoutParams(para);
+
+		para = title.getLayoutParams();
+		para.height = (int) (window_height * (88.0 / 1334));
+		para.width = (int) window_width;
+		title.setLayoutParams(para);
+
+		para = seasons.getLayoutParams();
+		para.height = (int) (window_height * (120.0 / 1334));
+		para.width = (int) (window_width * (120.0 / 750));
+		seasons.setLayoutParams(para);
+
+		para = coat.getLayoutParams();
+		para.height = (int) (window_height * (120.0 / 1334));
+		para.width = (int) (window_width * (120.0 / 750));
+		coat.setLayoutParams(para);
+
+		para = footwear.getLayoutParams();
+		para.height = (int) (window_height * (120.0 / 1334));
+		para.width = (int) (window_width * (120.0 / 750));
+		footwear.setLayoutParams(para);
+
+		para = other.getLayoutParams();
+		para.height = (int) (window_height * (120.0 / 1334));
+		para.width = (int) (window_width * (120.0 / 750));
+		other.setLayoutParams(para);
+
+		para = viewPager.getLayoutParams();
+		para.height = (int) (window_height * (200.0 / 1334));
+		viewPager.setLayoutParams(para);
+	}
+
+	/**
+	 * 广告位
+	 * */
+	private void initViewPager() {
+		ViewGroup group = (ViewGroup) findViewById(R.id.viewGroup);
+
+		List<View> advPics = new ArrayList<View>();
+
+		ImageView img1 = new ImageView(this);
+		img1.setBackgroundResource(R.drawable.advertising1);// 广告位图片
+		advPics.add(img1);
+
+		ImageView img2 = new ImageView(this);
+		img2.setBackgroundResource(R.drawable.advertising4);
+		advPics.add(img2);
+
+		ImageView img3 = new ImageView(this);
+		img3.setBackgroundResource(R.drawable.advertising3);
+		advPics.add(img3);
+
+		// ImageView img4 = new ImageView(this);
+		// img4.setBackgroundResource(R.drawable.advertising4);
+		// advPics.add(img4);
+
+		imageViews = new ImageView[advPics.size()];
+
+		for (int i = 0; i < advPics.size(); i++) {
+			imageView = new ImageView(this);
+			imageView.setLayoutParams(new LayoutParams(20, 20));
+			imageView.setPadding(5, 5, 5, 5);
+			imageViews[i] = imageView;
+			if (i == 0) {
+				imageViews[i]
+						.setBackgroundResource(R.drawable.banner_dian_focus);// 广告位小点点（亮）
+			} else {
+				imageViews[i]
+						.setBackgroundResource(R.drawable.banner_dian_blur);// 广告位小点点（暗）
+			}
+			group.addView(imageViews[i]);
+		}
+
+		viewPager.setAdapter(new AdvAdapter(advPics));
+		viewPager.setOnPageChangeListener(new GuidePageChangeListener());
+		viewPager.setOnTouchListener(new OnTouchListener() {
+
+			@SuppressLint("ClickableViewAccessibility")
+			public boolean onTouch(View v, MotionEvent event) {
+				switch (event.getAction()) {
+				case MotionEvent.ACTION_DOWN:
+				case MotionEvent.ACTION_MOVE:
+					isContinue = false;
+					break;
+				case MotionEvent.ACTION_UP:
+					isContinue = true;
+					break;
+				default:
+					isContinue = true;
+					break;
+				}
+				return false;
+			}
+		});
+		new Thread(new Runnable() {
+			public void run() {
+				while (true) {
+					if (isContinue) {
+						viewHandler.sendEmptyMessage(what.get());
+						whatOption();
+					}
+				}
+			}
+		}).start();
+	}
+
+	/**
+	 * 点击事件
+	 * */
+	@SuppressLint("ShowToast")
+	public void onClick(View v) {
+		Intent intent;
+		Dialog alertDialog;
+		switch (v.getId()) {
+		case R.id.btn_my:
+			intent = new Intent(ShowActivity.this, MyActivity.class);
+			startActivity(intent);
+			// ShowActivity.this.finish();
+			break;
+		case R.id.btn_add:
+			intent = new Intent(ShowActivity.this, AddArticleActivity.class);
+			startActivityForResult(intent, 101);
+			break;
+		case R.id.seasons:
+			if (itemBeans.size() == 0) {
+				break;
+			}
+			if (itemBeans.get(0).getItem_id() == null) {
+				break;
+			}
+			final String[] arrayFruit = new String[] { "全部", "春", "夏", "秋", "冬" };
+			alertDialog = new AlertDialog.Builder(this)
+					.setTitle("请选择季节：")
+					.setItems(arrayFruit,
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+									ItemBean itemBean;
+									List<ItemBean> seasonList = new ArrayList<ItemBean>();
+									if (!"全部".equals(arrayFruit[which])) {
+										for (int i = 0; i < itemBeans.size(); i++) {
+											itemBean = itemBeans.get(i);
+											if (itemBean.getSeason().equals(
+													arrayFruit[which])) {
+												seasonList.add(itemBean);
+											}
+										}
+										showAdapter = new ShowAdapter(
+												seasonList, ShowActivity.this);
+										show_list.setAdapter(showAdapter);
+									} else {
+										showAdapter = new ShowAdapter(
+												itemBeans, ShowActivity.this);
+										show_list.setAdapter(showAdapter);
+									}
+								}
+							})
+					.setNegativeButton("取消",
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+								}
+							}).create();
+			alertDialog.show();
+			break;
+		case R.id.coat:
+			if (itemBeans.size() == 0) {
+				break;
+			}
+			seasonList = new ArrayList<ItemBean>();
+			if (itemBeans.get(0).getItem_id() == null) {
+				break;
+			}
+			for (int i = 0; i < itemBeans.size(); i++) {
+				itemBean = itemBeans.get(i);
+				if (itemBean.getType().getName().equals("衣帽")) {
+					seasonList.add(itemBean);
+				}
+			}
+			showAdapter = new ShowAdapter(seasonList, ShowActivity.this);
+			show_list.setAdapter(showAdapter);
+			break;
+		case R.id.footwear:
+			if (itemBeans.size() == 0) {
+				break;
+			}
+			seasonList = new ArrayList<ItemBean>();
+			if (itemBeans.get(0).getItem_id() == null) {
+				break;
+			}
+			for (int i = 0; i < itemBeans.size(); i++) {
+				itemBean = itemBeans.get(i);
+				if (itemBean.getType().getName().equals("鞋袜")) {
+					seasonList.add(itemBean);
+				}
+			}
+			showAdapter = new ShowAdapter(seasonList, ShowActivity.this);
+			show_list.setAdapter(showAdapter);
+			break;
+		case R.id.other:
+			if (itemBeans.size() == 0) {
+				break;
+			}
+			if (itemBeans.get(0).getItem_id() == null) {
+				break;
+			} else {
+				arrayOther = new String[typeBeans.size() + 1];
+				arrayOther[0] = "全部";
+				for (int i = 1; i <= typeBeans.size(); i++) {
+					arrayOther[i] = typeBeans.get(i - 1).getName();
+				}
+			}
+			alertDialog = new AlertDialog.Builder(this)
+					.setTitle("请选择类型：")
+					.setItems(arrayOther,
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+									ItemBean itemBean;
+									List<ItemBean> seasonList = new ArrayList<ItemBean>();
+									if (!"全部".equals(arrayOther[which])) {
+										for (int i = 0; i < itemBeans.size(); i++) {
+											itemBean = itemBeans.get(i);
+											if (itemBeans.get(i).getType()
+													.getName()
+													.equals(arrayOther[which])) {
+												seasonList.add(itemBean);
+											}
+										}
+										showAdapter = new ShowAdapter(
+												seasonList, ShowActivity.this);
+										show_list.setAdapter(showAdapter);
+									} else {
+										showAdapter = new ShowAdapter(
+												itemBeans, ShowActivity.this);
+										show_list.setAdapter(showAdapter);
+									}
+								}
+							})
+					.setNegativeButton("取消",
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+								}
+							}).create();
+			alertDialog.show();
+			break;
+		case R.id.refresh:
+			getListItem(true);
+			break;
+		}
+	}
+
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode == 0) {
+			// getListItem();
+			if (resultCode == 1) {
+				String type = (String) data.getExtras().get("type");
+				seasonList = new ArrayList<ItemBean>();
+				for (int i = 0; i < itemBeans.size(); i++) {
+					itemBean = itemBeans.get(i);
+					if (itemBean.getSeason().equals(type)) {
+						seasonList.add(itemBean);
+					}
+				}
+				showAdapter = new ShowAdapter(seasonList, ShowActivity.this);
+				show_list.setAdapter(showAdapter);
+			}
+			if (resultCode == 101) {
+				getListItem(false);
+			}
+		}
+	}
+
+	/**
+	 * 模糊查询按钮
+	 */
+	private void conditionSearch() {
+		String condition = et_search.getText().toString();
+		VagueArticleWebservice vague = new VagueArticleWebservice(
+				ShowActivity.this, condition);
+		vague.execute();
+	}
+
+	@Override
+	protected void onRestart() {
+		super.onRestart();
+		getListItem(false);
+	}
+
+	/**
+	 * 广告位适配器
+	 * */
+	private final class AdvAdapter extends PagerAdapter {
+		private List<View> views = null;
+
+		public AdvAdapter(List<View> views) {
+			this.views = views;
+		}
+
+		public void destroyItem(View arg0, int arg1, Object arg2) {
+			((ViewPager) arg0).removeView(views.get(arg1));
+		}
+
+		public void finishUpdate(View arg0) {
+		}
+
+		public int getCount() {
+			return views.size();
+		}
+
+		public Object instantiateItem(View arg0, int arg1) {
+			((ViewPager) arg0).addView(views.get(arg1), 0);
+			return views.get(arg1);
+		}
+
+		public boolean isViewFromObject(View arg0, Object arg1) {
+			return arg0 == arg1;
+		}
+
+		public void restoreState(Parcelable arg0, ClassLoader arg1) {
+		}
+
+		public Parcelable saveState() {
+			return null;
+		}
+
+		public void startUpdate(View arg0) {
+		}
+	}
+
+	private final class GuidePageChangeListener implements OnPageChangeListener {
+
+		public void onPageScrollStateChanged(int arg0) {
+		}
+
+		public void onPageScrolled(int arg0, float arg1, int arg2) {
+		}
+
+		public void onPageSelected(int arg0) {
+			what.getAndSet(arg0);
+			for (int i = 0; i < imageViews.length; i++) {
+				imageViews[arg0]
+						.setBackgroundResource(R.drawable.banner_dian_focus);
+				if (arg0 != i) {
+					imageViews[i]
+							.setBackgroundResource(R.drawable.banner_dian_blur);
+				}
+			}
+		}
+	}
+
+	@SuppressLint("HandlerLeak")
+	private final Handler viewHandler = new Handler() {
+
+		@SuppressLint("HandlerLeak")
+		public void handleMessage(Message msg) {
+			viewPager.setCurrentItem(msg.what);
+			super.handleMessage(msg);
+		}
+	};
+
+	private void whatOption() {
+		what.incrementAndGet();
+		if (what.get() > imageViews.length - 1) {
+			what.getAndAdd(-4);
+		}
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+
+		}
+	}
+
+	public void onItemClick(AdapterView<?> parent, View view, int position,
+			long id) {
+
+	}
+
+	public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int arg2,
+			long arg3) {
+
+		return false;
+	}
+
+	/**
+	 * 下拉刷新接口
+	 * */
+	public void onRefresh() {
+		getListItem(false);
+	}
+
+	/**
+	 * 加载更多接口
+	 * */
+	public void onLoadMore() {
+
+	}
+
+	/** 停止刷新， */
+	public void onLoad() {
+		show_list.stopRefresh();
+		show_list.stopLoadMore();
+		show_list.setRefreshTime("刚刚");
+	}
+
+	/**
+	 * 返回键不退出程序 后台运行
+	 * */
+	// @Override
+	// public boolean onKeyDown(int keyCode, KeyEvent event) {
+	// if (keyCode == KeyEvent.KEYCODE_BACK) {
+	// moveTaskToBack(false);
+	// return true;
+	// }
+	// return super.onKeyDown(keyCode, event);
+	// }
+}
